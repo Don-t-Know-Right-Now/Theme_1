@@ -39,7 +39,7 @@ const CATS = [
   { key: 'decor', name: 'Wall & Home Décor', match: ['Wall Décor', 'Home Décor', 'Woodcraft'], img: 5371357, blurb: 'Macramé, carvings, candles and painted pieces that make a house feel lived in.' },
   { key: 'jewelry', name: 'Jewelry', match: ['Jewelry'], img: 14122227, blurb: 'Hammered, cast and beaded by hand — small pieces with a maker behind every one.' }
 ];
-const PRICE_F = [{ name: 'Any price', t: () => true }, { name: 'Under $40', t: p => p < 40 }, { name: '$40 – $80', t: p => p >= 40 && p <= 80 }, { name: 'Over $80', t: p => p > 80 }];
+const PRICE_F = [{ name: 'Any price', t: () => true }, { name: 'Under ৳40', t: p => p < 40 }, { name: '৳40 – ৳80', t: p => p >= 40 && p <= 80 }, { name: 'Over ৳80', t: p => p > 80 }];
 const FINISHES = [{ name: 'Natural', swatch: '#D9C7A8' }, { name: 'Charcoal', swatch: '#3B3936' }, { name: 'Moss', swatch: '#7A8466' }];
 const SIZES = ['Small', 'Medium', 'Large'];
 const DETAILS = [
@@ -65,13 +65,13 @@ class Component extends DCLogic {
   card(p) {
     const fav = !!this.state.favs[p.id];
     const ck = (CATS.find(c => c.key !== 'all' && c.match.includes(p.category)) || CATS[0]).key;
-    return { ...p, priceLabel: '$' + p.price.toFixed(2), freeShip: p.price >= 60, onOpen: () => this.go('product', p.id), onCat: () => this.goCat(ck),
+    return { ...p, priceLabel: '৳' + p.price.toFixed(2), freeShip: p.price >= 60, onOpen: () => this.go('product', p.id), onCat: () => this.goCat(ck),
       onFav: () => this.setState(s => ({ favs: { ...s.favs, [p.id]: !s.favs[p.id] } })),
       favFill: fav ? 'currentColor' : 'none', favColor: fav ? (this.props.accent ?? '#B4532A') : '#1C1B19' };
   }
   setLine(key, fn) { this.setState(x => ({ cart: x.cart.map(c => c.key === key ? { ...c, qty: fn(c.qty) } : c).filter(c => c.qty > 0) })); }
   cartVals(accent) {
-    const s = this.state, FREE = 60, $ = n => '$' + n.toFixed(2);
+    const s = this.state, FREE = 60, $ = n => '৳' + n.toFixed(2);
     const items = s.cart.map(c => { const p = PRODUCTS.find(q => q.id === c.pid);
       return { ...c, name: p.name, shop: p.shop, thumb: p.img.replace('w=1000', 'w=300'), variant: FINISHES[c.finish].name + ' · ' + SIZES[c.size], lineTotal: $(p.price * c.qty), price: p.price,
         onInc: () => this.setLine(c.key, q => Math.min(9, q + 1)), onDec: () => this.setLine(c.key, q => q - 1), onRemove: () => this.setLine(c.key, () => 0), origin: p.origin, unit: $(p.price),
@@ -185,7 +185,7 @@ class Component extends DCLogic {
       qty: s.qty,
       incQty: () => this.setState(x => ({ qty: Math.min(9, x.qty + 1) })),
       decQty: () => this.setState(x => ({ qty: Math.max(1, x.qty - 1) })),
-      addLabel: 'Add to cart — $' + (product.price * s.qty).toFixed(2),
+      addLabel: 'Add to cart — ৳' + (product.price * s.qty).toFixed(2),
       addToCart: () => this.setState(x => {
         const key = x.pid + '|' + x.finish + '|' + x.size;
         const ex = x.cart.find(c => c.key === key);
