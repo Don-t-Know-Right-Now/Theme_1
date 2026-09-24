@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loam — Handmade Handicrafts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="root"></div>
+<!-- Page markup. {{ value }} holes, <sc-for> loops and <sc-if> conditions are resolved by js/renderer.js -->
+<template id="app-template">
+<div style="min-height:100vh;display:flex;flex-direction:column">
+  <sc-if value="{{ showAnnouncement }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#1C1B19;color:#FBFAF7;font-size:13px;text-align:center;padding:9px 16px;letter-spacing:0.01em">Every piece handmade by independent artisans · Free shipping over $60</div>
+  </sc-if>
+  <header style="position:sticky;top:0;z-index:20;background:rgba(251,250,247,0.94);backdrop-filter:blur(8px);border-bottom:1px solid #E7E3DB">
+    <div style="max-width:1280px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px">
+      <button onClick="{{ goHome }}" style="background:none;border:0;padding:0;cursor:pointer;font-family:'Instrument Serif',serif;font-size:32px;line-height:1;color:#1C1B19;letter-spacing:-0.01em">Loam</button>
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #D9D4CA;border-radius:999px;padding:4px 4px 4px 18px;position:relative">
+        <input type="search" value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onQKey }}" onFocus="{{ onQFocus }}" onBlur="{{ onQBlur }}" aria-label="Search" placeholder="Search handmade pottery, baskets, woodcraft…" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#1C1B19;padding:8px 0">
+        <button onMouseDown="{{ runSearch }}" style="width:38px;height:38px;flex-shrink:0;border-radius:999px;border:0;background:{{ accent }};color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer" aria-label="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        </button>
+        <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border:1px solid #E7E3DB;border-radius:18px;box-shadow:0 16px 40px rgba(28,27,25,0.12);padding:8px;z-index:40;display:flex;flex-direction:column">
+            <sc-if value="{{ hasSuggestCats }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#6B675F;padding:8px 12px 4px">Categories</span>
+              <sc-for list="{{ suggestCats }}" as="c" hint-placeholder-count="0">
+                <button onMouseDown="{{ c.onPick }}" style="all:unset;cursor:pointer;padding:10px 12px;border-radius:10px;font-size:15px;display:flex;align-items:center;gap:10px" style-hover="background:#F3F0EA">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B675F" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>{{ c.name }}
+                </button>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ hasSuggestItems }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#6B675F;padding:8px 12px 4px">Products</span>
+              <sc-for list="{{ suggestItems }}" as="it" hint-placeholder-count="0">
+                <button onMouseDown="{{ it.onPick }}" style="all:unset;cursor:pointer;padding:8px 12px;border-radius:10px;display:flex;align-items:center;gap:12px" style-hover="background:#F3F0EA">
+                  <span style="display:block;width:44px;height:44px;border-radius:8px;flex-shrink:0;background:#EFEBE3 center/cover;background-image:url('{{ it.thumb }}')"></span>
+                  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;color:#1C1B19">{{ it.name }}</span><span style="font-size:13px;color:#6B675F">{{ it.shop }} · {{ it.priceLabel }}</span></span>
+                </button>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ noSuggest }}" hint-placeholder-val="{{ false }}">
+              <span style="padding:14px 12px;font-size:14px;color:#4A4741">No matches for “{{ q }}”. Press Enter to search anyway.</span>
+            </sc-if>
+            <button onMouseDown="{{ runSearch }}" style="all:unset;cursor:pointer;margin-top:4px;padding:12px;border-top:1px solid #E7E3DB;font-size:14px;font-weight:500" style-hover="text-decoration:underline">See all results for “{{ q }}” →</button>
+          </div>
+        </sc-if>
+      </div>
+      <nav style="display:flex;align-items:center;gap:6px">
+        <a href="#" style="font-size:14px;padding:10px 12px">Sign in</a>
+        <button style="width:44px;height:44px;border:0;background:none;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1C1B19" style-hover="background:#F0EDE6" aria-label="Favorites">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg>
+        </button>
+        <button onClick="{{ openCart }}" aria-label="Open cart" style="position:relative;width:44px;height:44px;border:0;background:none;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1C1B19" style-hover="background:#F0EDE6" aria-label="Cart">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 8h14l-1.2 11H6.2z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>
+          <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;top:6px;right:5px;min-width:17px;height:17px;border-radius:999px;background:{{ accent }};color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box">{{ cartCount }}</span>
+          </sc-if>
+        </button>
+      </nav>
+    </div>
+    <div style="max-width:1280px;margin:0 auto;padding:0 24px 12px;display:flex;gap:26px;font-size:14px;color:#4A4741;overflow-x:auto;white-space:nowrap">
+      <sc-for list="{{ navCats }}" as="n" hint-placeholder-count="7">
+        <button onClick="{{ n.onClick }}" style="all:unset;cursor:pointer;color:{{ n.color }};font-weight:{{ n.weight }};padding:2px 0;border-bottom:1.5px solid {{ n.line }}" style-hover="color:#1C1B19">{{ n.name }}</button>
+      </sc-for>
+    </div>
+  </header>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <main data-screen-label="Home" style="flex:1">
+      <section style="max-width:1280px;margin:0 auto;padding:40px 24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:40px;align-items:center">
+        <div style="display:flex;flex-direction:column;gap:22px;max-width:520px">
+          <span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#6B675F">Handicrafts, direct from the maker</span>
+          <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(44px,6vw,76px);line-height:0.98;letter-spacing:-0.02em;text-wrap:balance">Shaped by hand, not by machines.</h1>
+          <p style="margin:0;font-size:17px;line-height:1.55;color:#4A4741;text-wrap:pretty">Pottery, weaving, woodcraft and textiles from artisan workshops. Every purchase goes straight to the maker.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button style="height:48px;padding:0 26px;white-space:nowrap;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer">Shop handicrafts</button>
+            <button style="height:48px;padding:0 26px;white-space:nowrap;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:15px;font-weight:500;cursor:pointer">Meet the makers</button>
+          </div>
+        </div>
+        <div style="aspect-ratio:5/4;width:100%">
+          <image-slot id="hero" shape="rounded" radius="20" src="https://images.pexels.com/photos/33878963/pexels-photo-33878963.jpeg?auto=compress&cs=tinysrgb&w=1000" placeholder="Hero image"></image-slot>
+        </div>
+      </section>
+
+      <section style="max-width:1280px;margin:0 auto;padding:48px 24px 8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:20px">
+          <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+            <a href="#" onClick="{{ c.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+              <div style="width:100%;max-width:132px;aspect-ratio:1">
+                <image-slot id="cat-{{ c.id }}" shape="circle" src="{{ c.img }}" placeholder="{{ c.name }}"></image-slot>
+              </div>
+              <span style="font-size:14px;font-weight:500">{{ c.name }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1280px;margin:0 auto;padding:56px 24px 16px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:24px">
+          <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:40px;letter-spacing:-0.01em">Handpicked this week</h2>
+          <button onClick="{{ goAll }}" style="all:unset;cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px">See all</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:32px 20px">
+          <sc-for list="{{ products }}" as="p" hint-placeholder-count="8">
+            <article style="display:flex;flex-direction:column;gap:12px">
+              <div style="position:relative;width:100%;aspect-ratio:{{ ratio }}">
+                <image-slot id="prod-{{ p.id }}" shape="rounded" radius="{{ radius }}" src="{{ p.img }}" placeholder="{{ p.name }}"></image-slot>
+                <button onClick="{{ p.onFav }}" aria-label="Save" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:999px;border:0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ p.favColor }}">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ p.favFill }}" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg>
+                </button>
+              </div>
+              <button onClick="{{ p.onOpen }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:15px;line-height:1.35;color:#1C1B19;text-wrap:pretty" style-hover="text-decoration:underline">{{ p.name }}</span>
+                <span style="font-size:13px;color:#6B675F">{{ p.shop }} · ★ {{ p.rating }} ({{ p.reviews }})</span>
+                <span style="font-size:16px;font-weight:600;margin-top:2px">{{ p.priceLabel }}</span>
+              </button>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+        <section style="max-width:1280px;margin:0 auto;padding:56px 24px 8px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:32px 20px">
+            <div style="background:{{ sec.tint }};border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:280px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#4A4741">{{ sec.count }}</span>
+                <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:38px;line-height:1;letter-spacing:-0.01em;text-wrap:balance">{{ sec.title }}</h2>
+                <p style="margin:0;font-size:15px;line-height:1.55;color:#4A4741;text-wrap:pretty">{{ sec.blurb }}</p>
+              </div>
+              <a href="#" onClick="{{ sec.onShop }}" style="align-self:flex-start;height:44px;padding:0 20px;border-radius:999px;background:#1C1B19;color:#FBFAF7;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px">Shop {{ sec.short }} <span>→</span></a>
+            </div>
+            <sc-for list="{{ sec.items }}" as="p" hint-placeholder-count="3">
+              <article style="display:flex;flex-direction:column;gap:12px">
+                <div style="position:relative;width:100%;aspect-ratio:{{ ratio }}">
+                  <image-slot id="prod-{{ p.id }}" shape="rounded" radius="{{ radius }}" src="{{ p.img }}" placeholder="{{ p.name }}"></image-slot>
+                  <button onClick="{{ p.onFav }}" aria-label="Save" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:999px;border:0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ p.favColor }}">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ p.favFill }}" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg>
+                  </button>
+                </div>
+                <button onClick="{{ p.onOpen }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-size:15px;line-height:1.35;color:#1C1B19;text-wrap:pretty" style-hover="text-decoration:underline">{{ p.name }}</span>
+                  <span style="font-size:13px;color:#6B675F">{{ p.shop }} · {{ p.origin }}</span>
+                  <span style="font-size:16px;font-weight:600;margin-top:2px">{{ p.priceLabel }}</span>
+                </button>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-for>
+
+      <section style="max-width:1280px;margin:0 auto;padding:64px 24px">
+        <div style="background:#EFEBE3;border-radius:24px;overflow:hidden;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))">
+          <div style="padding:56px 48px;display:flex;flex-direction:column;justify-content:center;gap:18px">
+            <span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#6B675F">Maker spotlight</span>
+            <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:48px;line-height:1;letter-spacing:-0.01em;text-wrap:balance">Three generations of basket weavers in the Mekong Delta</h2>
+            <p style="margin:0;font-size:16px;line-height:1.6;color:#4A4741;max-width:440px">Hand-split bamboo, patterns passed down by memory, and baskets that last decades. Meet the Mekong Weavers.</p>
+            <a href="#" style="font-size:15px;font-weight:500;text-decoration:underline;text-underline-offset:4px">Read the story</a>
+          </div>
+          <div style="min-height:360px;position:relative">
+            <image-slot id="spotlight" shape="rect" src="https://images.pexels.com/photos/28849646/pexels-photo-28849646.jpeg?auto=compress&cs=tinysrgb&w=1000" placeholder="Maker portrait"></image-slot>
+          </div>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+    <main data-screen-label="Product" style="flex:1">
+      <div style="max-width:1280px;margin:0 auto;padding:20px 24px 0;font-size:13px;color:#6B675F;display:flex;gap:8px;flex-wrap:wrap">
+        <button onClick="{{ goHome }}" style="all:unset;cursor:pointer;color:#6B675F">Home</button><span>/</span><button onClick="{{ product.onCat }}" style="all:unset;cursor:pointer;color:#6B675F" style-hover="text-decoration:underline">{{ product.category }}</button><span>/</span><span style="color:#1C1B19">{{ product.name }}</span>
+      </div>
+      <section style="max-width:1280px;margin:0 auto;padding:20px 24px 48px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:start">
+        <div style="display:flex;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:10px;width:68px;flex-shrink:0">
+            <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="0">
+              <button onClick="{{ g.onSelect }}" aria-label="Photo {{ g.n }}" style="padding:0;width:68px;height:68px;border-radius:10px;border:2px solid {{ g.border }};background:#EFEBE3;cursor:pointer;overflow:hidden"><span style="display:block;width:100%;height:100%;background-image:url('{{ g.thumb }}');background-size:cover;background-position:center"></span></button>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:0">
+            <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="0">
+              <div style="display:{{ g.display }};width:100%;aspect-ratio:4/5">
+                <image-slot id="pd-{{ product.id }}-{{ g.n }}" shape="rounded" radius="16" src="{{ g.src }}" placeholder="Product photo {{ g.n }}"></image-slot>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:22px;max-width:520px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <a href="#" style="font-size:14px;text-decoration:underline;text-underline-offset:3px;color:#4A4741">{{ product.shop }}</a>
+            <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:44px;line-height:1.02;letter-spacing:-0.01em;text-wrap:balance">{{ product.name }}</h1>
+            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#4A4741">
+              <span style="color:#1C1B19;letter-spacing:1px">★★★★★</span><span>{{ product.rating }} · {{ product.reviews }} reviews</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:12px">
+            <span style="font-size:28px;font-weight:600">{{ product.priceLabel }}</span>
+            <span style="font-size:14px;color:{{ accent }};font-weight:500">Only 4 left</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:14px;font-weight:500">Finish — <span style="font-weight:400;color:#4A4741">{{ finishName }}</span></span>
+            <div style="display:flex;gap:10px">
+              <sc-for list="{{ finishes }}" as="f" hint-placeholder-count="3">
+                <button onClick="{{ f.onSelect }}" aria-label="{{ f.name }}" style="width:36px;height:36px;border-radius:999px;border:0;background:{{ f.swatch }};box-shadow:0 0 0 2px #FBFAF7, 0 0 0 {{ f.ring }} #1C1B19;cursor:pointer"></button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:14px;font-weight:500">{{ sizeLabel }}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.onSelect }}" style="height:44px;padding:0 20px;white-space:nowrap;border-radius:999px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }};font-size:14px;cursor:pointer">{{ s.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:stretch">
+            <div style="display:flex;align-items:center;border:1px solid #D9D4CA;border-radius:999px;height:52px">
+              <button onClick="{{ decQty }}" style="width:44px;height:100%;border:0;background:none;font-size:18px;cursor:pointer;color:#1C1B19">−</button>
+              <span style="min-width:20px;text-align:center;font-size:15px">{{ qty }}</span>
+              <button onClick="{{ incQty }}" style="width:44px;height:100%;border:0;background:none;font-size:18px;cursor:pointer;color:#1C1B19">+</button>
+            </div>
+            <button onClick="{{ addToCart }}" style="flex:1;height:52px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#35332F">{{ addLabel }}</button>
+          </div>
+          <button style="height:52px;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:15px;font-weight:500;cursor:pointer;margin-top:-10px">Buy it now</button>
+
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:#4A4741;padding:16px 18px;background:#F3F0EA;border-radius:14px">
+            <span><strong style="color:#1C1B19;font-weight:500">Arrives Oct 3–8</strong> if ordered today</span>
+            <span>Free returns within 30 days</span>
+          </div>
+
+          <div style="border-top:1px solid #E7E3DB">
+            <sc-for list="{{ details }}" as="d" hint-placeholder-count="3">
+              <div style="border-bottom:1px solid #E7E3DB">
+                <button onClick="{{ d.onToggle }}" style="all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;cursor:pointer;font-size:15px;font-weight:500">
+                  <span>{{ d.title }}</span><span style="font-size:20px;font-weight:300;color:#6B675F">{{ d.icon }}</span>
+                </button>
+                <sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#4A4741;text-wrap:pretty">{{ d.body }}</p>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:52px;height:52px;flex-shrink:0">
+              <image-slot id="shop-avatar" shape="circle" placeholder="Logo"></image-slot>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:15px;font-weight:500">{{ product.shop }}</span>
+              <span style="font-size:13px;color:#6B675F">{{ product.origin }} · Artisan-run workshop</span>
+            </div>
+            <button style="height:40px;padding:0 18px;white-space:nowrap;border-radius:999px;border:1px solid #D9D4CA;background:#fff;font-size:14px;cursor:pointer;color:#1C1B19">Follow shop</button>
+          </div>
+        </div>
+      </section>
+
+      <section style="max-width:1280px;margin:0 auto;padding:24px 24px 64px;border-top:1px solid #E7E3DB">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:32px 0 24px">
+          <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:36px;letter-spacing:-0.01em">You may also like</h2>
+          <button onClick="{{ goHome }}" style="all:unset;cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px">Keep browsing</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:28px 18px">
+          <sc-for list="{{ related }}" as="p" hint-placeholder-count="4">
+            <article style="display:flex;flex-direction:column;gap:12px">
+              <div style="position:relative;width:100%;aspect-ratio:{{ ratio }}">
+                <image-slot id="prod-{{ p.id }}" shape="rounded" radius="{{ radius }}" src="{{ p.img }}" placeholder="{{ p.name }}"></image-slot>
+              </div>
+              <button onClick="{{ p.onOpen }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:15px;line-height:1.35" style-hover="text-decoration:underline">{{ p.name }}</span>
+                <span style="font-size:13px;color:#6B675F">{{ p.shop }}</span>
+                <span style="font-size:16px;font-weight:600;margin-top:2px">{{ p.priceLabel }}</span>
+              </button>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isCategory }}" hint-placeholder-val="{{ false }}">
+    <main data-screen-label="Category" style="flex:1">
+      <div style="max-width:1280px;margin:0 auto;padding:20px 24px 0;font-size:13px;color:#6B675F;display:flex;gap:8px">
+        <button onClick="{{ goHome }}" style="all:unset;cursor:pointer;color:#6B675F">Home</button><span>/</span><span style="color:#1C1B19">{{ cat.name }}</span>
+      </div>
+      <section style="max-width:1280px;margin:0 auto;padding:24px 24px 8px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+        <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(44px,6vw,68px);line-height:1;letter-spacing:-0.02em">{{ cat.name }}</h1>
+        <p style="margin:0;font-size:16px;line-height:1.55;color:#4A4741;max-width:560px;text-wrap:pretty">{{ cat.blurb }}</p>
+      </section>
+      <sc-if value="{{ showCatTiles }}" hint-placeholder-val="{{ true }}">
+      <section style="max-width:1280px;margin:0 auto;padding:28px 24px 8px">
+        <div style="display:flex;gap:20px;overflow-x:auto;justify-content:safe center;padding-bottom:6px">
+          <sc-for list="{{ catTiles }}" as="c" hint-placeholder-count="7">
+            <button onClick="{{ c.onClick }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;width:104px;flex-shrink:0;text-align:center">
+              <span style="display:block;width:96px;height:96px;border-radius:999px;background:#EFEBE3 center/cover;background-image:url('{{ c.img }}');box-shadow:0 0 0 {{ c.ring }} #1C1B19;border:3px solid #FBFAF7;box-sizing:border-box"></span>
+              <span style="font-size:14px;font-weight:{{ c.weight }};line-height:1.25">{{ c.name }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+      </sc-if>
+      <section style="max-width:1280px;margin:0 auto;padding:24px 24px 72px">
+        <div style="position:sticky;top:114px;z-index:10;background:#FBFAF7;padding:14px 0;border-bottom:1px solid #E7E3DB;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;overflow-x:auto;flex:1;min-width:0">
+            <sc-for list="{{ priceFilters }}" as="f" hint-placeholder-count="4">
+                  <button onClick="{{ f.onClick }}" style="height:40px;padding:0 16px;border-radius:999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0">{{ f.name }}</button>
+                </sc-for>
+            <button onClick="{{ toggleFree }}" style="height:40px;padding:0 16px;border-radius:999px;border:1px solid {{ freeBorder }};background:{{ freeBg }};color:{{ freeColor }};font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0">Free shipping</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:#4A4741">Sort by
+            <select value="{{ sort }}" onChange="{{ onSort }}" style="height:40px;border:1px solid #D9D4CA;border-radius:999px;padding:0 14px;font:inherit;font-size:14px;background:#fff;color:#1C1B19;cursor:pointer;outline:none">
+              <option value="rel">Relevance</option>
+              <option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option>
+              <option value="top">Top rated</option>
+            </select>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 22px;flex-wrap:wrap">
+          <span style="font-size:14px;color:#4A4741">{{ resultLabel }}</span>
+          <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ clearFilters }}" style="all:unset;cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px">Clear filters</button>
+          </sc-if>
+        </div>
+        <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:36px 20px">
+            <sc-for list="{{ catProducts }}" as="p" hint-placeholder-count="8">
+              <article style="display:flex;flex-direction:column;gap:12px">
+                <div style="position:relative;width:100%;aspect-ratio:{{ ratio }}">
+                  <image-slot id="prod-{{ p.id }}" shape="rounded" radius="{{ radius }}" src="{{ p.img }}" placeholder="{{ p.name }}"></image-slot>
+                  <sc-if value="{{ p.freeShip }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;left:10px;bottom:10px;background:#fff;color:#1C1B19;font-size:12px;font-weight:500;padding:5px 10px;border-radius:999px">Free shipping</span>
+                  </sc-if>
+                  <button onClick="{{ p.onFav }}" aria-label="Save" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:999px;border:0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ p.favColor }}">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ p.favFill }}" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg>
+                  </button>
+                </div>
+                <button onClick="{{ p.onOpen }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-size:15px;line-height:1.35;color:#1C1B19;text-wrap:pretty" style-hover="text-decoration:underline">{{ p.name }}</span>
+                  <span style="font-size:13px;color:#6B675F">{{ p.shop }} · ★ {{ p.rating }} ({{ p.reviews }})</span>
+                  <span style="font-size:16px;font-weight:600;margin-top:2px">{{ p.priceLabel }}</span>
+                </button>
+              </article>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #E7E3DB;border-radius:20px;padding:64px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <span style="font-family:'Instrument Serif',serif;font-size:32px">{{ emptyTitle }}</span>
+            <span style="font-size:15px;color:#4A4741;max-width:380px">{{ emptyBody }}</span>
+            <button onClick="{{ goAll }}" style="margin-top:8px;height:48px;padding:0 26px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer">Browse all handicrafts</button>
+          </div>
+        </sc-if>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isCart }}" hint-placeholder-val="{{ false }}">
+    <main data-screen-label="Cart" style="flex:1">
+      <div style="max-width:1280px;margin:0 auto;padding:20px 24px 0;font-size:13px;color:#6B675F;display:flex;gap:8px">
+        <button onClick="{{ goHome }}" style="all:unset;cursor:pointer;color:#6B675F">Home</button><span>/</span><span style="color:#1C1B19">Cart</span>
+      </div>
+      <section style="max-width:1280px;margin:0 auto;padding:20px 24px 64px">
+        <h1 style="margin:0 0 32px;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(40px,5vw,56px);line-height:1;letter-spacing:-0.01em">Your cart <span style="font-family:'Geist',sans-serif;font-size:17px;color:#6B675F;letter-spacing:0">{{ cartCount }} items</span></h1>
+        <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #E7E3DB;border-radius:20px;padding:64px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+            <span style="font-family:'Instrument Serif',serif;font-size:34px">Nothing here yet</span>
+            <span style="font-size:15px;color:#4A4741;max-width:340px">Every piece is made by hand in small batches — find something you'll keep.</span>
+            <button onClick="{{ goHome }}" style="margin-top:8px;height:48px;padding:0 26px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer">Start shopping</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:48px;align-items:start">
+            <div style="grid-column:span 2;min-width:0;display:flex;flex-direction:column">
+              <div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;background:#F3F0EA;border-radius:14px;margin-bottom:8px">
+                <span style="font-size:14px;color:#4A4741">{{ shipMsg }}</span>
+                <div style="height:6px;border-radius:999px;background:#E1DCD2;overflow:hidden"><div style="height:100%;width:{{ shipPct }};background:{{ accent }};border-radius:999px;transition:width 0.3s ease"></div></div>
+              </div>
+              <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="0">
+                <div style="display:flex;gap:20px;padding:24px 0;border-bottom:1px solid #E7E3DB">
+                  <button onClick="{{ it.onOpen }}" style="padding:0;border:0;background:none;cursor:pointer;flex-shrink:0"><span role="img" aria-label="{{ it.name }}" style="display:block;width:128px;height:160px;object-fit:cover;border-radius:12px;background:#EFEBE3;display:block;background-image:url('{{ it.thumb }}');background-size:cover;background-position:center"></span></button>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
+                      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                        <button onClick="{{ it.onOpen }}" style="all:unset;cursor:pointer;font-family:'Instrument Serif',serif;font-size:24px;line-height:1.1" style-hover="text-decoration:underline">{{ it.name }}</button>
+                        <span style="font-size:14px;color:#6B675F">{{ it.shop }} · {{ it.origin }}</span>
+                        <span style="font-size:14px;color:#4A4741">{{ it.variant }}</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+                        <span style="font-size:17px;font-weight:600">{{ it.lineTotal }}</span>
+                        <span style="font-size:13px;color:#6B675F">{{ it.unit }} each</span>
+                      </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:20px;margin-top:auto;padding-top:12px;flex-wrap:wrap">
+                      <div style="display:flex;align-items:center;border:1px solid #D9D4CA;border-radius:999px;height:40px">
+                        <button onClick="{{ it.onDec }}" aria-label="Decrease" style="width:40px;height:100%;border:0;background:none;font-size:17px;cursor:pointer;color:#1C1B19">−</button>
+                        <span style="min-width:18px;text-align:center;font-size:14px">{{ it.qty }}</span>
+                        <button onClick="{{ it.onInc }}" aria-label="Increase" style="width:40px;height:100%;border:0;background:none;font-size:17px;cursor:pointer;color:#1C1B19">+</button>
+                      </div>
+                      <button onClick="{{ it.onSave }}" style="all:unset;cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px">Save for later</button>
+                      <button onClick="{{ it.onRemove }}" style="all:unset;cursor:pointer;font-size:14px;color:#6B675F;text-decoration:underline;text-underline-offset:3px">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+              <label style="display:flex;gap:12px;align-items:flex-start;padding:24px 0;cursor:pointer">
+                <input type="checkbox" checked="{{ isGift }}" onChange="{{ toggleGift }}" style="width:18px;height:18px;margin:2px 0 0;accent-color:#1C1B19">
+                <span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:15px;font-weight:500">This order is a gift</span><span style="font-size:14px;color:#6B675F">Prices are hidden on the packing slip, and you can add a handwritten note from the maker.</span></span>
+              </label>
+              <sc-if value="{{ isGift }}" hint-placeholder-val="{{ false }}">
+                <textarea placeholder="Your note (the maker will handwrite it)" rows="3" style="font:inherit;font-size:15px;padding:14px 16px;border:1px solid #D9D4CA;border-radius:14px;background:#fff;resize:vertical;outline:none;color:#1C1B19"></textarea>
+              </sc-if>
+            </div>
+            <aside style="position:sticky;top:130px;border:1px solid #E7E3DB;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px;background:#fff">
+              <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Order summary</h2>
+              <div style="display:flex;justify-content:space-between;font-size:15px"><span>Subtotal</span><span>{{ subtotal }}</span></div>
+              <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;justify-content:space-between;font-size:15px;color:{{ accent }}"><span>HANDMADE10</span><span>−{{ discount }}</span></div>
+              </sc-if>
+              <div style="display:flex;justify-content:space-between;font-size:15px"><span>Shipping</span><span>{{ shippingLabel }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;color:#6B675F"><span>Estimated tax</span><span>At checkout</span></div>
+              <div style="display:flex;gap:8px">
+                <input value="{{ promo }}" onChange="{{ onPromo }}" placeholder="Promo code" style="flex:1;min-width:0;height:44px;border:1px solid #D9D4CA;border-radius:999px;padding:0 16px;font:inherit;font-size:14px;outline:none;background:#FBFAF7;text-transform:uppercase">
+                <button onClick="{{ applyPromo }}" style="height:44px;padding:0 18px;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:14px;cursor:pointer">Apply</button>
+              </div>
+              <sc-if value="{{ promoMsg }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:13px;color:#4A4741;margin-top:-6px">{{ promoMsg }}</span>
+              </sc-if>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #E7E3DB;padding-top:16px"><span style="font-size:16px;font-weight:500">Total</span><span style="font-size:24px;font-weight:600">{{ total }}</span></div>
+              <button style="height:54px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer" onClick="{{ goCheckout }}" style-hover="background:#35332F">Proceed to checkout</button>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#6B675F">
+                <span>Free returns within 30 days</span>
+                <span>Your purchase goes directly to the artisan</span>
+              </div>
+            </aside>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasSaved }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:56px;display:flex;flex-direction:column;gap:20px">
+            <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:32px">Saved for later</h2>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:24px 18px">
+              <sc-for list="{{ savedItems }}" as="it" hint-placeholder-count="0">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <span role="img" aria-label="{{ it.name }}" style="display:block;width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:12px;background:#EFEBE3;display:block;background-image:url('{{ it.thumb }}');background-size:cover;background-position:center"></span>
+                  <span style="font-size:15px">{{ it.name }}</span>
+                  <span style="font-size:13px;color:#6B675F">{{ it.variant }} · {{ it.unit }}</span>
+                  <button onClick="{{ it.onMove }}" style="height:40px;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:14px;cursor:pointer">Move to cart</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+      <section style="max-width:1280px;margin:0 auto;padding:24px 24px 64px;border-top:1px solid #E7E3DB">
+        <h2 style="margin:32px 0 24px;font-family:'Instrument Serif',serif;font-weight:400;font-size:36px;letter-spacing:-0.01em">Pairs well with</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:28px 18px">
+          <sc-for list="{{ related }}" as="p" hint-placeholder-count="4">
+            <article style="display:flex;flex-direction:column;gap:12px">
+              <div style="position:relative;width:100%;aspect-ratio:{{ ratio }}">
+                <image-slot id="prod-{{ p.id }}" shape="rounded" radius="{{ radius }}" src="{{ p.img }}" placeholder="{{ p.name }}"></image-slot>
+              </div>
+              <button onClick="{{ p.onOpen }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:15px;line-height:1.35" style-hover="text-decoration:underline">{{ p.name }}</span>
+                <span style="font-size:13px;color:#6B675F">{{ p.shop }}</span>
+                <span style="font-size:16px;font-weight:600;margin-top:2px">{{ p.priceLabel }}</span>
+              </button>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+    <main data-screen-label="Checkout" style="flex:1">
+      <div style="max-width:1180px;margin:0 auto;padding:20px 24px 0;font-size:13px;color:#6B675F;display:flex;gap:8px">
+        <button onClick="{{ goCart }}" style="all:unset;cursor:pointer;color:#6B675F">Cart</button><span>/</span><span style="color:#1C1B19">Checkout</span>
+      </div>
+      <section style="max-width:1180px;margin:0 auto;padding:20px 24px 72px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:48px;align-items:start">
+        <div style="grid-column:span 2;min-width:0;display:flex;flex-direction:column;gap:40px">
+          <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(40px,5vw,56px);line-height:1;letter-spacing:-0.01em">Checkout</h1>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:28px;border-radius:999px;background:#1C1B19;color:#FBFAF7;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Contact</h2></div>
+            <input placeholder="Email address" autocomplete="email" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+            <label style="display:flex;gap:10px;align-items:center;font-size:14px;color:#4A4741;cursor:pointer"><input type="checkbox" defaultChecked="{{ true }}" style="width:17px;height:17px;margin:0;accent-color:#1C1B19">Email me about new makers and restocks</label>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:28px;border-radius:999px;background:#1C1B19;color:#FBFAF7;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Shipping address</h2></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+              <input placeholder="First name" autocomplete="given-name" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+              <input placeholder="Last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+            </div>
+            <input placeholder="Address" autocomplete="street-address" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+            <input placeholder="Apartment, suite, etc. (optional)" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+              <input placeholder="City" autocomplete="address-level2" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+              <input placeholder="State / Region" autocomplete="address-level1" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+              <input placeholder="Postal code" autocomplete="postal-code" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+            </div>
+            <input placeholder="Phone (for delivery updates)" autocomplete="tel" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:28px;border-radius:999px;background:#1C1B19;color:#FBFAF7;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Delivery</h2></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="2">
+                <button onClick="{{ d.onSelect }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:14px;border:1.5px solid {{ d.border }};background:{{ d.bg }}">
+                  <span style="width:18px;height:18px;border-radius:999px;border:1.5px solid #1C1B19;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="width:10px;height:10px;border-radius:999px;background:{{ d.dot }}"></span></span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:500">{{ d.name }}</span><span style="font-size:13px;color:#6B675F">{{ d.eta }}</span></span>
+                  <span style="font-size:15px;font-weight:500">{{ d.price }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:28px;border-radius:999px;background:#1C1B19;color:#FBFAF7;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span><h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Payment</h2></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ payOpts }}" as="m" hint-placeholder-count="3">
+                <button onClick="{{ m.onSelect }}" style="height:44px;padding:0 20px;border-radius:999px;border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.color }};font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0">{{ m.name }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ payCard }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <input placeholder="Card number" autocomplete="cc-number" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+                  <input placeholder="Expiry (MM / YY)" autocomplete="cc-exp" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+                  <input placeholder="Security code" autocomplete="cc-csc" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+                </div>
+                <input placeholder="Name on card" autocomplete="cc-name" style="width:100%;box-sizing:border-box;height:50px;border:1px solid #D9D4CA;border-radius:12px;padding:0 16px;font:inherit;font-size:15px;background:#fff;outline:none;color:#1C1B19" style-focus="border-color:#1C1B19">
+              </div>
+            </sc-if>
+            <sc-if value="{{ payOther }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:18px 20px;border-radius:14px;background:#F3F0EA;font-size:14px;color:#4A4741">You'll be redirected to {{ payName }} to finish paying.</div>
+            </sc-if>
+            <label style="display:flex;gap:10px;align-items:center;font-size:14px;color:#4A4741;cursor:pointer"><input type="checkbox" defaultChecked="{{ true }}" style="width:17px;height:17px;margin:0;accent-color:#1C1B19">Billing address same as shipping</label>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button onClick="{{ placeOrder }}" style="height:56px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:16px;font-weight:500;cursor:pointer" style-hover="background:#35332F">Place order — {{ total }}</button>
+            <span style="font-size:13px;color:#6B675F;text-align:center">By placing your order you agree to our Terms and Privacy policy.</span>
+          </div>
+        </div>
+
+        <aside style="position:sticky;top:130px;border:1px solid #E7E3DB;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px;background:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1">Order summary</h2>
+            <button onClick="{{ goCart }}" style="all:unset;cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px">Edit</button>
+          </div>
+          <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="0">
+            <div style="display:flex;gap:14px;align-items:center">
+              <div style="position:relative;flex-shrink:0">
+                <span role="img" aria-label="{{ it.name }}" style="display:block;width:64px;height:76px;object-fit:cover;border-radius:10px;background:#EFEBE3;display:block;background-image:url('{{ it.thumb }}');background-size:cover;background-position:center"></span>
+                <span style="position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;border-radius:999px;background:#4A4741;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 6px;box-sizing:border-box">{{ it.qty }}</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;line-height:1.3">{{ it.name }}</span><span style="font-size:13px;color:#6B675F">{{ it.variant }}</span></div>
+              <span style="font-size:14px;font-weight:500">{{ it.lineTotal }}</span>
+            </div>
+          </sc-for>
+          <div style="border-top:1px solid #E7E3DB;padding-top:16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:15px"><span>Subtotal</span><span>{{ subtotal }}</span></div>
+            <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font-size:15px;color:{{ accent }}"><span>HANDMADE10</span><span>−{{ discount }}</span></div>
+            </sc-if>
+            <div style="display:flex;justify-content:space-between;font-size:15px"><span>Shipping</span><span>{{ shippingLabel }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:15px"><span>Tax</span><span>{{ tax }}</span></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #E7E3DB;padding-top:16px"><span style="font-size:16px;font-weight:500">Total</span><span style="font-size:24px;font-weight:600">{{ total }}</span></div>
+          <sc-if value="{{ isGift }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:13px;color:#4A4741;padding:12px 14px;background:#F3F0EA;border-radius:10px">Gift order — prices hidden on the packing slip.</span>
+          </sc-if>
+        </aside>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
+    <main data-screen-label="Order confirmed" style="flex:1">
+      <section style="max-width:640px;margin:0 auto;padding:80px 24px 96px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+        <span style="width:64px;height:64px;border-radius:999px;background:{{ accent }};color:#fff;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+        <span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#6B675F">Order {{ orderNo }}</span>
+        <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(40px,6vw,60px);line-height:1;letter-spacing:-0.01em;text-wrap:balance">Thank you — your makers are on it.</h1>
+        <p style="margin:0;font-size:16px;line-height:1.6;color:#4A4741;max-width:460px;text-wrap:pretty">A confirmation is on its way to your inbox. Each artisan packs your piece by hand and you'll get tracking as soon as it ships.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px">
+          <button onClick="{{ goHome }}" style="height:48px;padding:0 26px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer">Keep browsing</button>
+          <button style="height:48px;padding:0 26px;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:15px;font-weight:500;cursor:pointer">Track order</button>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <footer style="border-top:1px solid #E7E3DB;background:#F3F0EA">
+    <div style="max-width:1280px;margin:0 auto;padding:56px 24px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:36px">
+      <div style="display:flex;flex-direction:column;gap:14px;grid-column:span 2;min-width:0">
+        <span style="font-family:'Instrument Serif',serif;font-size:32px;line-height:1">Loam</span>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#4A4741;max-width:340px">New artisans and their stories, once a month.</p>
+        <div style="display:flex;gap:8px;max-width:380px">
+          <input placeholder="Email address" style="flex:1;min-width:0;height:44px;border:1px solid #D9D4CA;border-radius:999px;padding:0 18px;font:inherit;font-size:14px;background:#fff;outline:none">
+          <button style="height:44px;padding:0 20px;white-space:nowrap;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:14px;cursor:pointer">Subscribe</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+        <span style="font-weight:500;margin-bottom:4px">Shop</span>
+        <a href="#" style="color:#4A4741">Gift cards</a><a href="#" style="color:#4A4741">New arrivals</a><a href="#" style="color:#4A4741">Meet the makers</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+        <span style="font-weight:500;margin-bottom:4px">Sell</span>
+        <a href="#" style="color:#4A4741">Sell your craft</a><a href="#" style="color:#4A4741">Artisan handbook</a><a href="#" style="color:#4A4741">Fair-trade promise</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+        <span style="font-weight:500;margin-bottom:4px">Help</span>
+        <a href="#" style="color:#4A4741">Help center</a><a href="#" style="color:#4A4741">Shipping</a><a href="#" style="color:#4A4741">Returns</a>
+      </div>
+    </div>
+    <div style="max-width:1280px;margin:0 auto;padding:18px 24px 28px;font-size:13px;color:#6B675F;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid #E1DCD2">
+      <span>© 2026 Loam · Product photos via Pexels</span>
+      <div style="display:flex;gap:18px"><a href="#" style="color:#6B675F">Terms</a><a href="#" style="color:#6B675F">Privacy</a><a href="#" style="color:#6B675F">Cookies</a></div>
+    </div>
+  </footer>
+
+  <div onClick="{{ closeCart }}" style="position:fixed;inset:0;background:rgba(28,27,25,0.38);z-index:60;opacity:{{ cartOverlayOpacity }};pointer-events:{{ cartPointer }};transition:opacity 0.25s ease"></div>
+  <aside aria-label="Cart" style="position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:#FBFAF7;z-index:61;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,0.12);transform:{{ cartTransform }};transition:transform 0.32s cubic-bezier(0.2,0.8,0.2,1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #E7E3DB">
+      <h2 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:32px;line-height:1">Your cart <span style="font-family:'Geist',sans-serif;font-size:15px;color:#6B675F">({{ cartCount }})</span></h2>
+      <button onClick="{{ closeCart }}" aria-label="Close cart" style="width:44px;height:44px;border-radius:999px;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1C1B19" style-hover="background:#F0EDE6">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 24px;border-bottom:1px solid #E7E3DB;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;color:#4A4741">{{ shipMsg }}</span>
+        <div style="height:6px;border-radius:999px;background:#E7E3DB;overflow:hidden"><div style="height:100%;width:{{ shipPct }};background:{{ accent }};border-radius:999px;transition:width 0.3s ease"></div></div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:8px 24px">
+        <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="0">
+          <div style="display:flex;gap:16px;padding:18px 0;border-bottom:1px solid #E7E3DB">
+            <span role="img" aria-label="{{ it.name }}" style="display:block;width:88px;height:108px;object-fit:cover;border-radius:10px;background:#EFEBE3;flex-shrink:0;background-image:url('{{ it.thumb }}');background-size:cover;background-position:center"></span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;justify-content:space-between;gap:12px">
+                <button onClick="{{ it.onOpen }}" style="all:unset;cursor:pointer;font-size:15px;line-height:1.35" style-hover="text-decoration:underline">{{ it.name }}</button>
+                <span style="font-size:15px;font-weight:600;white-space:nowrap">{{ it.lineTotal }}</span>
+              </div>
+              <span style="font-size:13px;color:#6B675F">{{ it.shop }}</span>
+              <span style="font-size:13px;color:#6B675F">{{ it.variant }}</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px">
+                <div style="display:flex;align-items:center;border:1px solid #D9D4CA;border-radius:999px;height:36px">
+                  <button onClick="{{ it.onDec }}" aria-label="Decrease" style="width:34px;height:100%;border:0;background:none;font-size:16px;cursor:pointer;color:#1C1B19">−</button>
+                  <span style="min-width:16px;text-align:center;font-size:14px">{{ it.qty }}</span>
+                  <button onClick="{{ it.onInc }}" aria-label="Increase" style="width:34px;height:100%;border:0;background:none;font-size:16px;cursor:pointer;color:#1C1B19">+</button>
+                </div>
+                <button onClick="{{ it.onRemove }}" style="all:unset;cursor:pointer;font-size:13px;color:#6B675F;text-decoration:underline;text-underline-offset:3px">Remove</button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="padding:20px 24px 24px;border-top:1px solid #E7E3DB;display:flex;flex-direction:column;gap:14px;background:#F3F0EA">
+        <div style="display:flex;justify-content:space-between;font-size:15px"><span>Subtotal</span><span style="font-weight:600">{{ subtotal }}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;color:#4A4741"><span>Shipping</span><span>{{ shippingLabel }}</span></div>
+        <button style="height:52px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer" onClick="{{ goCheckout }}" style-hover="background:#35332F">Checkout — {{ total }}</button>
+        <button onClick="{{ goCart }}" style="height:48px;border-radius:999px;border:1px solid #1C1B19;background:transparent;color:#1C1B19;font-size:15px;font-weight:500;cursor:pointer;margin-top:-4px">View cart</button>
+        <button onClick="{{ closeCart }}" style="all:unset;cursor:pointer;text-align:center;font-size:14px;text-decoration:underline;text-underline-offset:3px">Continue shopping</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 24px;text-align:center">
+        <span style="font-family:'Instrument Serif',serif;font-size:30px">Your cart is empty</span>
+        <span style="font-size:15px;color:#4A4741;max-width:280px">Every piece is made by hand in small batches — find something you'll keep.</span>
+        <button onClick="{{ closeCart }}" style="margin-top:8px;height:48px;padding:0 26px;border-radius:999px;border:0;background:#1C1B19;color:#FBFAF7;font-size:15px;font-weight:500;cursor:pointer">Start shopping</button>
+      </div>
+    </sc-if>
+  </aside>
+</div>
+</template>
+<script src="js/renderer.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
